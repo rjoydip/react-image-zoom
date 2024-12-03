@@ -1,33 +1,37 @@
 import reactLogo from './assets/react.svg';
 import './App.css';
-import { memo, useEffect, useRef, useState, KeyboardEvent } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 interface ZoomableImageProps {
   src: string;
   alt?: string;
-  zoomStep?: number;
-  maxZoom?: number;
-  minZoom?: number;
 }
 
 const ZoomableImage: React.FC<ZoomableImageProps> = memo(
-  ({ src, alt = 'Image', zoomStep = 0.1, maxZoom = 3, minZoom = 0.5 }) => {
+  ({ src, alt = 'Image' }) => {
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
     const [scale, setScale] = useState<number>(1);
     const imageRef = useRef<HTMLDivElement>(null);
 
-    // Adjust zoom level
-    const handleZoom = (step: number) => {
-      setScale((prevScale) =>
-        Math.min(maxZoom, Math.max(minZoom, prevScale + step))
-      );
-    };
+    // Adjust zoom level based on window and image dimensions
+    const handleZoom = () => {
+      const imgElement = imageRef.current?.children[0] as HTMLImageElement;
 
-    // Keyboard controls for zoom
-    const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === '+' || event.key === '=') {
-        handleZoom(zoomStep);
-      } else if (event.key === '-') {
-        handleZoom(-zoomStep);
+      // TODO: Calculate scale based on window clientHeight, clientWidth with document clientHeight, clientWidth
+      if (imgElement) {
+        const imgWidth = imgElement.clientWidth;
+        const imgHeight = imgElement.clientHeight;
+
+        // Calculate the scale ratio
+        const targetScale = Math.min(
+          windowWidth / imgWidth,
+          windowHeight / imgHeight
+        );
+
+        setScale((prevScale: number) =>
+          prevScale === targetScale ? 1 : targetScale
+        );
       }
     };
 
@@ -43,14 +47,18 @@ const ZoomableImage: React.FC<ZoomableImageProps> = memo(
       image: {
         transform: `scale(${scale})`,
         transformOrigin: 'center',
-        transition: 'transform 0.3s ease',
+        transition: 'transform 1s ease-in',
         width: '100%',
         height: 'auto',
       } as React.CSSProperties,
     };
 
     return (
-      <div ref={imageRef} onKeyDown={handleKeyDown} aria-label="Zoomable Image">
+      <div
+        ref={imageRef}
+        onClick={() => handleZoom()}
+        aria-label="Zoomable Image"
+      >
         <img
           src={src}
           alt={alt}
@@ -58,10 +66,6 @@ const ZoomableImage: React.FC<ZoomableImageProps> = memo(
           style={styles.image}
           draggable={false}
         />
-        <div style={{ marginTop: '3.5rem', textAlign: 'center' }}>
-          <button onClick={() => handleZoom(zoomStep)}>Zoom In</button>
-          <button onClick={() => handleZoom(-zoomStep)}>Zoom Out</button>
-        </div>
       </div>
     );
   }
